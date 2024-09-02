@@ -1,0 +1,8 @@
+node_modules/
+.next/
+.env
+.env.local
+*.log
+chunk_embeddings.json
+data/
+conversation_histories/
