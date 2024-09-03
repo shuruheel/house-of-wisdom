@@ -2,6 +2,7 @@ export interface Message {
     id: string;
     text: string;
     sender: 'user' | 'ai';
+    mermaidDiagrams?: string[];
   }
   
   export interface Conversation {

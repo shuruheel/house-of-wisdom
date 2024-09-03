@@ -50,7 +50,7 @@ export async function* processQuery(query: string, conversationHistory: Conversa
 
     // Format query with context, now including conversationHistory
     console.info('Formatting query with context');
-    const formattedQuery = await formatQueryWithContext(
+    const formattedQueryResult = await formatQueryWithContext(
       query,
       conversationHistory,
       events,
@@ -61,6 +61,8 @@ export async function* processQuery(query: string, conversationHistory: Conversa
       ideal_mix,
       conceptRelationships
     );
+
+    const { formattedQuery, mermaidDiagrams } = formattedQueryResult;
 
     console.info('Formatted query:', formattedQuery);
 
@@ -85,13 +87,16 @@ export async function* processQuery(query: string, conversationHistory: Conversa
 
     console.info('Calling generateText with formattedQuery and systemPrompt');
     for await (const chunk of generateText(formattedQuery, systemPrompt, 'anthropic', 'claude-3-5-sonnet-20240620')) {
-      yield chunk;
+      yield { type: 'chunk', content: chunk };
     }
     console.info('Finished generating text');
 
+    // Yield mermaid diagrams
+    yield { type: 'mermaidDiagrams', content: mermaidDiagrams };
+
   } catch (error) {
     console.error('An error occurred while processing the query:', error);
-    yield "I'm sorry, but I encountered an error while processing your query. Please try again or rephrase your question.";
+    yield { type: 'error', content: "I'm sorry, but I encountered an error while processing your query. Please try again or rephrase your question." };
   }
 }
 

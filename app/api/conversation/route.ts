@@ -42,11 +42,23 @@ async function handleQueryConversation({ query, conversationId }: { query: strin
     async start(controller) {
       const queryGenerator = processQuery(query, conversationHistory);
       let fullResponse = '';
+      let mermaidDiagrams: string[] = [];
 
       try {
-        for await (const chunk of queryGenerator) {
-          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ chunk })}\n\n`));
-          fullResponse += chunk;
+        for await (const result of queryGenerator) {
+          switch (result.type) {
+            case 'chunk':
+              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ chunk: result.content })}\n\n`));
+              fullResponse += result.content;
+              break;
+            case 'mermaidDiagrams':
+              mermaidDiagrams = Array.isArray(result.content) ? result.content : [result.content];
+              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ mermaidDiagrams })}\n\n`));
+              break;
+            case 'error':
+              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ error: result.content })}\n\n`));
+              break;
+          }
         }
       } catch (error) {
         console.error('Error processing message:', error);
@@ -54,7 +66,7 @@ async function handleQueryConversation({ query, conversationId }: { query: strin
       } finally {
         await saveConversationHistory(conversationId, [
           ...conversationHistory,
-          { text: query, response: fullResponse } as ConversationTurn,
+          { text: query, response: fullResponse, mermaidDiagrams } as ConversationTurn,
         ]);
         controller.close();
       }

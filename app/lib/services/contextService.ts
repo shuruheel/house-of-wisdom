@@ -16,18 +16,18 @@ export async function formatQueryWithContext(
   idealMix: { events: number; claims_ideas: number; chunks: number },
   conceptRelationships: any[],
   maxContextLength = 100000
-): Promise<string> {
+): Promise<{ formattedQuery: string; mermaidDiagrams: string[] }> {
   try {
     let context = "# Information From Your Mind\n\n";
 
     // Add Relationships Between Concepts
-    context += "##  Concept Map\n\n";
+    context += "##  Semantic Map\n\n";
     if (conceptRelationships.length > 0) {
       for (const relationship of conceptRelationships) {
         context += `${relationship.source} ${relationship.type} ${relationship.target}.\n`;
       }
     } else {
-      context += "No relevant concept relationships found.\n";
+      context += "No semantic map found.\n";
     }
 
     // Add Emotional Context
@@ -83,10 +83,19 @@ export async function formatQueryWithContext(
     );
 
     // Add chain-of-thought responses to the context
-    context += "# Chain-of-Thoughts Reasoning\n";
+    context += "## Reasoning\n";
     for (const response of cotResponses) {
       context += response + "\n";
     }
+
+    // Extract Mermaid diagrams from cotResponses, cleaning up markdown syntax
+    const mermaidDiagrams = cotResponses.flatMap(response => {
+      const mermaidMatches = response.match(/```mermaid\s*([\s\S]*?)\s*```/g) || [];
+      return mermaidMatches.map(match => {
+        const diagramContent = match.replace(/```mermaid\s*|\s*```/g, '').trim();
+        return diagramContent;
+      });
+    });
 
     // Add conversation history to the context
     context += "\n## Conversation History\n";
@@ -95,7 +104,6 @@ export async function formatQueryWithContext(
       .join("\n\n");
     context += formattedConversationHistory + "\n\n";
 
-    // Missing: Final system prompt
     const finalSystemPrompt = `
       You are an AI designed to embody knowledge. 
       Whenever a human being says something to you, you receive their words with relevant Events, Ideas, and Structured Information from your mind. 
@@ -125,7 +133,7 @@ export async function formatQueryWithContext(
     `;
 
     console.debug(`Formatted query length: ${formattedQuery.length} characters`);
-    return formattedQuery;
+    return { formattedQuery, mermaidDiagrams };
   } catch (error) {
     throw handleError(error, 'formatQueryWithContext');
   }

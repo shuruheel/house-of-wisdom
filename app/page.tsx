@@ -11,6 +11,7 @@ import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
 import { Message, Conversation } from './types'
+import MermaidDiagramRenderer from './components/MermaidDiagramRenderer'
 
 const defaultConversation: Conversation = {
   id: uuidv4(),
@@ -139,7 +140,11 @@ export default function Home() {
             for (const line of lines) {
               if (line.startsWith('data: ')) {
                 const data = JSON.parse(line.slice(6));
-                aiMessage.text += data.chunk;
+                if (data.chunk) {
+                  aiMessage.text += data.chunk;
+                } else if (data.mermaidDiagrams) {
+                  aiMessage.mermaidDiagrams = data.mermaidDiagrams;
+                }
                 setConversations(prevConvs => prevConvs.map(conv =>
                   conv.id === activeConversationId
                     ? { ...conv, messages: [...(conv.messages || []).filter(m => m.id !== aiMessage.id), aiMessage] }
@@ -220,6 +225,9 @@ export default function Home() {
                   <div className={`max-w-[80%] rounded-lg p-3 ${
                     message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
                   }`}>
+                    {message.sender === 'ai' && message.mermaidDiagrams && message.mermaidDiagrams.length > 0 && (
+                        <MermaidDiagramRenderer diagrams={message.mermaidDiagrams} />
+                    )}
                     {message.sender === 'ai' ? (
                       <ReactMarkdown 
                         rehypePlugins={[rehypeRaw, rehypeSanitize]}
