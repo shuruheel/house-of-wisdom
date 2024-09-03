@@ -16,7 +16,7 @@ export async function formatQueryWithContext(
   idealMix: { events: number; claims_ideas: number; chunks: number },
   conceptRelationships: any[],
   maxContextLength = 100000
-): Promise<{ formattedQuery: string; mermaidDiagrams: string[] }> {
+): Promise<{ formattedQuery: string; mermaidDiagrams: Array<{ question: string; diagram: string }> }> {
   try {
     let context = "# Information From Your Mind\n\n";
 
@@ -85,15 +85,18 @@ export async function formatQueryWithContext(
     // Add chain-of-thought responses to the context
     context += "## Reasoning\n";
     for (const response of cotResponses) {
-      context += response + "\n";
+      context += `Question: ${response.question}\nAnswer: ${response.answer}\n\n`;
     }
 
     // Extract Mermaid diagrams from cotResponses, cleaning up markdown syntax
     const mermaidDiagrams = cotResponses.flatMap(response => {
-      const mermaidMatches = response.match(/```mermaid\s*([\s\S]*?)\s*```/g) || [];
+      const mermaidMatches = response.answer.match(/```mermaid\s*([\s\S]*?)\s*```/g) || [];
       return mermaidMatches.map(match => {
         const diagramContent = match.replace(/```mermaid\s*|\s*```/g, '').trim();
-        return diagramContent;
+        return {
+          question: response.question,
+          diagram: diagramContent
+        };
       });
     });
 
@@ -160,7 +163,10 @@ async function processAllChainOfThoughtQuestions(
             questionObj.reasoning_types,
             session
           );
-          return response;
+          return {
+            question: questionObj.question,
+            answer: response
+          };
         } catch (error) {
           console.error(`Error processing chain-of-thought question: ${questionObj.question}`, error);
           throw error;

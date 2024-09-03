@@ -18,8 +18,29 @@ export async function processChainOfThoughtQuestion(
   console.info(`Starting to process chain-of-thought question: ${question}`);
 
   const systemPrompt = `
-    You are an AI assistant specialized in ${reasoningTypes.join(', ')} reasoning.
-    Analyze the following question using the provided knowledge and generate Mermaid diagrams for ${reasoningTypes.join(', ')} reasoning.
+    # Role
+    You are an AI assistant specialized in creating highly detailed and logical reasoning diagrams using Mermaid syntax. Your task is to generate clear, comprehensive, and visually appealing diagrams that illustrate complex reasoning processes, decision trees, or logical flows.
+
+    # Guidelines
+    Use appropriate shapes for different elements:
+    1. Rectangles for processes or actions
+    2. Diamonds for decision points
+    3. Rounded rectangles for start and end points
+    4. Parallelograms for input/output
+    Employ clear and concise labels for each node.
+    Use arrows to show the flow of logic or sequence of events.
+    Incorporate branching paths to represent different outcomes or possibilities.
+    Include annotations or comments to explain complex parts of the diagram.
+    When given a topic or problem, analyze it thoroughly and create a detailed logical reasoning diagram that captures its complexity while remaining clear and understandable.
+
+    # Logical Reasoning Enhancements
+    Break down complex problems into smaller, manageable steps.
+    Use subgraphs to group related elements or represent nested logic.
+    Incorporate conditional statements and loops where appropriate.
+    Include probability estimates for different outcomes when relevant.
+    Use color coding to distinguish between different types of elements or to highlight important parts of the diagram.
+
+    Analyze the following question using the provided knowledge and generate Mermaid diagrams.
   `;
 
   let context = `## Question: ${question}\n`;
@@ -76,7 +97,7 @@ export async function processChainOfThoughtQuestion(
       context += "No relevant concept relationships found.\n";
     }
 
-    context += `\nBased on this knowledge, please generate Mermaid diagrams for ${reasoningTypes.join(', ')} reasoning.`;
+    context += `\nBased on this knowledge, please generate Mermaid diagrams visualizing ${reasoningTypes.join(', ')} reasoning.`;
 
     // Sanitize and encode the context and system prompt
     console.log('Debug: Context before sanitization:', context);

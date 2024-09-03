@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { processQuery, loadConversationHistory, saveConversationHistory } from '../../lib/services/conversationService';
 import fs from 'fs/promises';
 import path from 'path';
-import { ConversationTurn } from '../../types';
+import { ConversationTurn, MermaidDiagram } from '../../types';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -42,7 +42,7 @@ async function handleQueryConversation({ query, conversationId }: { query: strin
     async start(controller) {
       const queryGenerator = processQuery(query, conversationHistory);
       let fullResponse = '';
-      let mermaidDiagrams: string[] = [];
+      let mermaidDiagrams: MermaidDiagram[] = [];
 
       try {
         for await (const result of queryGenerator) {
@@ -55,7 +55,7 @@ async function handleQueryConversation({ query, conversationId }: { query: strin
               fullResponse += safeContent;
               break;
             case 'mermaidDiagrams':
-              mermaidDiagrams = Array.isArray(result.content) ? result.content : [result.content].filter(Boolean);
+              mermaidDiagrams = Array.isArray(result.content) ? result.content : [];
               console.log('Enqueueing mermaid diagrams:', JSON.stringify(mermaidDiagrams));
               controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ mermaidDiagrams })}\n\n`));
               break;

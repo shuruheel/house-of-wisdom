@@ -2,7 +2,7 @@ export interface Message {
     id: string;
     text: string;
     sender: 'user' | 'ai';
-    mermaidDiagrams?: string[];
+    mermaidDiagrams?: MermaidDiagram[];
   }
   
   export interface Conversation {
@@ -25,12 +25,18 @@ export interface Message {
     [key: string]: any;
   }
 
-export interface ConversationTurn {
+  export interface ConversationTurn {
     text: string;
     response: string;
+    mermaidDiagrams?: MermaidDiagram[];
   }
 
   export interface ChainOfThoughtQuestion {
     question: string;
     reasoning_types: string[];
+  }
+
+  export interface MermaidDiagram {
+    question: string;
+    diagram: string;
   }

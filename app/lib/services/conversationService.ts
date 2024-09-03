@@ -7,10 +7,12 @@ import { getRelevantEventsAndClaims, getRelevantConceptRelationships } from './n
 import { getRelevantChunks } from './embeddingService';
 import { formatQueryWithContext } from './contextService';
 import { generateText } from './aiService';
+import { MermaidDiagram } from '../../types';
 
 interface ConversationTurn {
   text: string;
   response: string;
+  mermaidDiagrams?: MermaidDiagram[]; // Add this field
 }
 
 const HISTORY_DIR = path.join(process.cwd(), 'conversation_histories');
