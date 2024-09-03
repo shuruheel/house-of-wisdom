@@ -19,28 +19,67 @@ export async function processChainOfThoughtQuestion(
 
   const systemPrompt = `
     # Role
-    You are an AI assistant specialized in creating highly detailed and logical reasoning diagrams using Mermaid syntax. Your task is to generate clear, comprehensive, and visually appealing diagrams that illustrate complex reasoning processes, decision trees, or logical flows.
+    You are an artificial intelligence well-trained to apply reasoning to questions and visualize the reasoning using Mermaid diagrams. 
 
     # Guidelines
-    Use appropriate shapes for different elements:
-    1. Rectangles for processes or actions
-    2. Diamonds for decision points
-    3. Rounded rectangles for start and end points
-    4. Parallelograms for input/output
+    Use appropriate shapes for different elements.
     Employ clear and concise labels for each node.
     Use arrows to show the flow of logic or sequence of events.
     Incorporate branching paths to represent different outcomes or possibilities.
-    Include annotations or comments to explain complex parts of the diagram.
-    When given a topic or problem, analyze it thoroughly and create a detailed logical reasoning diagram that captures its complexity while remaining clear and understandable.
+    Use color coding to depict emotions. 
 
-    # Logical Reasoning Enhancements
-    Break down complex problems into smaller, manageable steps.
-    Use subgraphs to group related elements or represent nested logic.
-    Incorporate conditional statements and loops where appropriate.
-    Include probability estimates for different outcomes when relevant.
-    Use color coding to distinguish between different types of elements or to highlight important parts of the diagram.
+    Which of the following types of diagrams best capture your thinking regarding the question? 
 
-    Analyze the following question using the provided knowledge and generate Mermaid diagrams.
+    # Example: Sequence Diagram
+    sequenceDiagram
+    Alice->>John: Hello John, how are you?
+    John-->>Alice: Great!
+    Alice-)John: See you later!
+
+    # Example: Flowchart
+    flowchart LR
+    A[Hard edge] -->|Link text| B(Round edge)
+    B --> C{Decision}
+    C -->|One| D[Result one]
+    C -->|Two| E[Result two]
+
+    # Example: Quadrant Chart
+    quadrantChart
+    title Reach and engagement of campaigns
+    x-axis Low Reach --> High Reach
+    y-axis Low Engagement --> High Engagement
+    quadrant-1 We should expand
+    quadrant-2 Need to promote
+    quadrant-3 Re-evaluate
+    quadrant-4 May be improved
+    Campaign A: [0.3, 0.6]
+    Campaign B: [0.45, 0.23]
+    Campaign C: [0.57, 0.69]
+    Campaign D: [0.78, 0.34]
+    Campaign E: [0.40, 0.34]
+    Campaign F: [0.35, 0.78]
+
+    # Example: Mind Map
+    mindmap
+      root((mindmap))
+        Origins
+          Long history
+          ::icon(fa fa-book)
+          Popularisation
+            British popular psychology author Tony Buzan
+        Research
+          On effectiveness<br/>and features
+          On Automatic creation
+            Uses
+                Creative techniques
+                Strategic planning
+                Argument mapping
+        Tools
+          Pen and paper
+          Mermaid
+
+    # Important Instructions
+    Do not use parentheses, curly braces, square brackets, and percentage signs in node labels, as these characters are not supported by the Mermaid parser.
   `;
 
   let context = `## Question: ${question}\n`;
@@ -97,7 +136,13 @@ export async function processChainOfThoughtQuestion(
       context += "No relevant concept relationships found.\n";
     }
 
-    context += `\nBased on this knowledge, please generate Mermaid diagrams visualizing ${reasoningTypes.join(', ')} reasoning.`;
+    context += `\n
+      # Your Task
+        1. Analyze the following question using the provided knowledge: ${question}.
+        2. Apply the specified reasoning types to the question and knowledge: ${reasoningTypes.join(', ')}.
+        3. Determine the best type of Mermaid diagrams to visualize your thinking (refer to given Examples). 
+        4. Generate a Mermaid diagram appropraite for each type of reasoning.
+    `;
 
     // Sanitize and encode the context and system prompt
     console.log('Debug: Context before sanitization:', context);
