@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
-import { PlusCircle, Save, Trash2, Send } from 'lucide-react'
+import { PlusCircle, Save, Trash2, Send, Eye, EyeOff } from 'lucide-react'
 import { Button } from "./components/ui/button"
 import { Input } from "./components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./components/ui/card"
@@ -24,6 +24,7 @@ export default function Home() {
   const [activeConversationId, setActiveConversationId] = useState<string>(defaultConversation.id);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [hiddenDiagrams, setHiddenDiagrams] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const activeConversation = conversations.find(conv => conv.id === activeConversationId) ?? defaultConversation;
@@ -140,11 +141,7 @@ export default function Home() {
             for (const line of lines) {
               if (line.startsWith('data: ')) {
                 const data = JSON.parse(line.slice(6));
-                if (data.chunk) {
-                  aiMessage.text += data.chunk;
-                } else if (data.mermaidDiagrams) {
-                  aiMessage.mermaidDiagrams = data.mermaidDiagrams;
-                }
+                aiMessage.text += data.chunk;
                 setConversations(prevConvs => prevConvs.map(conv =>
                   conv.id === activeConversationId
                     ? { ...conv, messages: [...(conv.messages || []).filter(m => m.id !== aiMessage.id), aiMessage] }
@@ -179,6 +176,18 @@ export default function Home() {
     }
   };
 
+  const toggleDiagramVisibility = (messageId: string) => {
+    setHiddenDiagrams(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <aside className="w-64 bg-card border-r overflow-hidden flex flex-col">
@@ -193,7 +202,7 @@ export default function Home() {
             {conversations.map(conv => (
               <Button
                 key={conv.id}
-                variant={activeConversationId === conv.id ? "secondary" : "ghost"}
+                variant={activeConversationId === conv.id ? "default" : "secondary"}
                 className="w-full justify-start"
                 onClick={() => setActiveConversationId(conv.id)}
               >
@@ -222,11 +231,26 @@ export default function Home() {
             <ScrollArea className="h-full pr-4" ref={scrollRef}>
               {activeConversation?.messages?.map((message) => (
                 <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
-                  <div className={`max-w-[80%] rounded-lg p-3 ${
+                  <div className={`max-w-[80%] rounded-lg p-3 relative ${
                     message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
                   }`}>
                     {message.sender === 'ai' && message.mermaidDiagrams && message.mermaidDiagrams.length > 0 && (
-                        <MermaidDiagramRenderer diagrams={message.mermaidDiagrams} />
+                      <div className="mb-5">
+                      <button 
+                        onClick={() => toggleDiagramVisibility(message.id)}
+                        className="absolute top-1 left-1 p-1 rounded-full bg-background/50 hover:bg-background/75 transition-colors"
+                      >
+                        
+                        {hiddenDiagrams.has(message.id) ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
+                      </button>
+                      </div>
+                    )}
+                    {message.sender === 'ai' && message.mermaidDiagrams && message.mermaidDiagrams.length > 0 && !hiddenDiagrams.has(message.id) && (
+                      <MermaidDiagramRenderer diagrams={message.mermaidDiagrams} />
                     )}
                     {message.sender === 'ai' ? (
                       <ReactMarkdown 
