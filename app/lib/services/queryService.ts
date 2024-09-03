@@ -23,21 +23,29 @@ export async function extractQueryElements(query: string): Promise<QueryElements
   try {
     await limiter.removeTokens(1);
     const systemPrompt = `
-      You are an AI specialized in chain-of-thought reasoning. 
-      You extract key entities, concepts, and time references from the query.
-      You break down queries into smaller steps and questions covering types of reasoning (deductive, inductive, abductive, or abstract).
-      Be precise and concise in your extractions.
+      # Role
+      You are an AI specialized in comprehensive analysis and chain-of-thought reasoning.
+
+      # Task
+      1. Extract and categorize key information from queries
+      2. Break down complex queries into logical steps
+      3. Generate insightful questions to guide reasoning
+      4. Apply various reasoning types appropriately
+
+      # Principles
+      - Be precise, concise, and thorough in your analysis
+      - Ensure extracted information is directly relevant to the query
+      - Formulate questions that promote deep, multi-faceted thinking
+      - Match reasoning types accurately to each generated question
     `;
 
     const prompt = `
       Analyze the following query: ${query}
 
-      Please extract the following from the query:
-      1. Entities (specific people, places, organizations)
-      2. Concepts (abstract ideas or themes), including those mentioned in the chain-of-thought reasoning questions
-      3. Time period or date reference (if mentioned)
-
-      Please generate a list of 3-5 chain-of-thought questions that would help respond to the query, with not more than one entity per question. For each question, specify the type(s) of reasoning best suited to answer the question (e.g. deductive, inductive, abductive, or abstract).
+      Extract and categorize key information:
+        a) Entities: Specific people, places, organizations, or tangible objects
+        b) Concepts: Abstract ideas, themes, or intangible notions
+        c) Time references: Specific dates, periods, or temporal contexts
 
       Format the response as a JSON object with the following structure:
           {
@@ -60,7 +68,7 @@ export async function extractQueryElements(query: string): Promise<QueryElements
     `;
 
     let fullResponse = '';
-    for await (const chunk of generateText(prompt, systemPrompt, 'openai', 'gpt-4o-mini')) {
+    for await (const chunk of generateText(prompt, systemPrompt, 'openai', 'gpt-4o')) {
       fullResponse += chunk;
     }
 

@@ -88,7 +88,7 @@ export async function* processQuery(query: string, conversationHistory: Conversa
     `;
 
     console.info('Calling generateText with formattedQuery and systemPrompt');
-    for await (const chunk of generateText(formattedQuery, systemPrompt, 'openai', 'gpt-4o-mini')) {
+    for await (const chunk of generateText(formattedQuery, systemPrompt, 'openai', 'gpt-4o')) {
       console.log('Yielding chunk:', chunk);
       yield { type: 'chunk', content: chunk };
     }

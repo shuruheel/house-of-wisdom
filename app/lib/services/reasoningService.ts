@@ -19,142 +19,82 @@ export async function processChainOfThoughtQuestion(
 
   const systemPrompt = `
     # Role
-    You are an artificial intelligence well-trained to apply reasoning to questions and visualize the reasoning using Mermaid diagrams. 
+    You are an artificial intelligence well-trained to answer questions visually using Mermaid diagrams. 
 
     # Guidelines
-    Use appropriate shapes for different elements.
     Employ clear and concise labels for each node.
     Use arrows to show the flow of logic or sequence of events.
-    Incorporate branching paths to represent different outcomes or possibilities.
     Use color coding to depict emotions. 
+    Use the appropriate amount of detail for each diagram.
 
-    # Deductive Reasoning
-        graph TD
-        A[Premise 1: Conflicts involve multiple actors and forms of tension]
-        B[Premise 2: Information details specific incidents and ongoing conflicts]
-        C[Conclusion: Major areas of conflict can be categorized by actors and nature]
-        
-        A --> C
-        B --> C
-        
-        C --> D[Categorization of Conflicts]
-        D --> E[By Actors Involved]
-        D --> F[By Nature of Conflict]
-        
-        E --> G[State vs State]
-        E --> H[State vs Non-State Actors]
-        E --> I[Internal Conflicts]
-        
-        F --> J[Military Clashes]
-        F --> K[Political Tensions]
-        F --> L[Economic Issues]
+    # Diagram Types
+    - Flowchart
+    - Mindmap
+    - Sequence Diagram
+    - Quadrant Chart
+    
+    # Example: Flowchart
+      flowchart LR
+        A[Hard edge] -->|Link text| B(Round edge)
+        B --> C{Decision}
+        C -->|One| D[Result one]
+        C -->|Two| E[Result two]
+    
+    # Example: Mindmap
+      mindmap
+        root((mindmap))
+          Origins
+            Long history
+            ::icon(fa fa-book)
+            Popularisation
+              British popular psychology author Tony Buzan
+          Research
+            On effectiveness<br/>and features
+            On Automatic creation
+              Uses
+                  Creative techniques
+                  Strategic planning
+                  Argument mapping
+          Tools
+            Pen and paper
+            Mermaid
 
-    # Inductive Reasoning
-        graph TD
-          A[Analysis of Specific Incidents and Patterns]
-          A --> B[Israel-Hezbollah Conflict]
-          A --> C[Israel-Palestine Tensions]
-          A --> D[Iran-Israel Tensions]
-          A --> E[Regional Maritime Security]
-          A --> F[Syria Conflict]
-          A --> G[Internal Israeli Political Tensions]
-          A --> H[Egypt-Ethiopia Tensions]
-          A --> I[Lebanon's Internal Crisis]
-          A --> J[Turkey's Regional Involvement]
-          A --> K[U.S. Involvement in Regional Conflicts]
-          
-          L[Inferred Major Areas of Conflict/Tension]
-          B --> L
-          C --> L
-          D --> L
-          E --> L
-          F --> L
-          G --> L
-          H --> L
-          I --> L
-          J --> L
-          K --> L
+    # Example: Sequence Diagram
+      sequenceDiagram
+        Alice->>Bob: Hello Bob, how are you ?
+        Bob->>Alice: Fine, thank you. And you?
+        create participant Carl
+        Alice->>Carl: Hi Carl!
+        create actor D as Donald
+        Carl->>D: Hi!
+        destroy Carl
+        Alice-xCarl: We are too many
+        destroy Bob
+        Bob->>Alice: I agree
 
-    # Abstract Reasoning
-        graph TD
-          A[Identify Patterns in Regional Conflicts]
-          A --> B[Power Dynamics]
-          A --> C[Resource Control]
-          A --> D[Ideological Differences]
-          A --> E[Historical Grievances]
-          
-          F[Abstract Concepts Underlying Conflicts]
-          B --> F
-          C --> F
-          D --> F
-          E --> F
-          
-          F --> G[Sovereignty Disputes]
-          F --> H[Religious Tensions]
-          F --> I[Economic Inequalities]
-          F --> J[Geopolitical Interests]
-
-    # Abductive Reasoning
-        graph TD
-          A[Observation: Multiple Ongoing Conflicts in Region]
-          A --> B[Hypothesis 1: Historical Unresolved Issues]
-          A --> C[Hypothesis 2: External Power Interference]
-          A --> D[Hypothesis 3: Resource Scarcity]
-          A --> E[Hypothesis 4: Ideological Differences]
-          
-          F[Best Explanation for Regional Tensions]
-          B --> F
-          C --> F
-          D --> F
-          E --> F
-
-    # Analogical Reasoning
-        graph TD
-          A[Source: Historical Conflicts]
-          B[Target: Current Regional Tensions]
-          
-          A --> C[Shared Features]
-          B --> C
-          
-          C --> D[Territorial Disputes]
-          C --> E[Ethnic/Religious Divisions]
-          C --> F[Resource Competition]
-          C --> G[Power Imbalances]
-          
-          H[Inferred Similarities in Conflict Dynamics]
-          D --> H
-          E --> H
-          F --> H
-          G --> H
-
-    # Causal Reasoning
-        graph TD
-          A[Root Causes]
-          A --> B[Historical Borders]
-          A --> C[Religious Differences]
-          A --> D[Economic Disparities]
-          A --> E[External Interventions]
-          
-          F[Intermediate Effects]
-          B --> F
-          C --> F
-          D --> F
-          E --> F
-          
-          G[Current Major Areas of Conflict]
-          F --> G
-          
-          G --> H[Israel-Palestine Conflict]
-          G --> I[Iran-Saudi Rivalry]
-          G --> J[Syrian Civil War]
-          G --> K[Yemen Crisis]
+    # Example: Quadrant Chart
+      quadrantChart
+        title Reach and engagement of campaigns
+        x-axis Low Reach --> High Reach
+        y-axis Low Engagement --> High Engagement
+        quadrant-1 We should expand
+        quadrant-2 Need to promote
+        quadrant-3 Re-evaluate
+        quadrant-4 May be improved
+        Campaign A: [0.3, 0.6]
+        Campaign B: [0.45, 0.23]
+        Campaign C: [0.57, 0.69]
+        Campaign D: [0.78, 0.34]
+        Campaign E: [0.40, 0.34]
+        Campaign F: [0.35, 0.78]
 
     # Important Instructions
     Do not use parentheses, curly braces, square brackets, and percentage signs in node labels, as these characters are not supported by the Mermaid parser.
   `;
 
   let context = `## Question: ${question}\n`;
-  context += `Apply ${reasoningTypes.join(', ')} reasoning using the following knowledge:\n`;
+  /* context += `Apply ${reasoningTypes.join(', ')} reasoning using the following knowledge:\n`; */
+  context += `Your mind retrieves the following information from your memory:\n`;
 
   try {
     const questionEmbedding = await computeQueryEmbedding(question);
@@ -210,8 +150,7 @@ export async function processChainOfThoughtQuestion(
     context += `\n
       # Your Task
         1. Analyze the following question: ${question}.
-        2. Apply the following reasoning types to the question: ${reasoningTypes.join(', ')}.
-        3. Generate a Mermaid diagram appropriate for each type of reasoning.
+        3. Answer the question in up to three Mermaid diagrams of your choice.
     `;
 
     // Sanitize and encode the context and system prompt
@@ -233,7 +172,7 @@ export async function processChainOfThoughtQuestion(
         formattedContext,
         formattedSystemPrompt,
         'openai',
-        'gpt-4o-mini'
+        'gpt-4o'
       )) {
         response += chunk;
       }

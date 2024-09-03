@@ -42,7 +42,7 @@ export async function* generateText(
 }
 
 // Implement the specific generator functions for each provider
-async function* generateOpenAIText(prompt: string, systemPrompt?: string, model = 'gpt-4o-mini', temperature = 0.2, maxTokens = 3000) {
+async function* generateOpenAIText(prompt: string, systemPrompt?: string, model = 'gpt-4o', temperature = 0.2, maxTokens = 3000) {
   const messages: OpenAI.ChatCompletionMessageParam[] = systemPrompt
     ? [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }]
     : [{ role: 'user', content: prompt }];
