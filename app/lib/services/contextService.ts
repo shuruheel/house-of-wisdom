@@ -16,10 +16,9 @@ export async function formatQueryWithContext(
   idealMix: { events: number; claims_ideas: number; chunks: number },
   conceptRelationships: any[],
   maxContextLength = 100000
-): Promise<{ formattedQuery: string, mermaidDiagrams: string[] }> {  // Update return type
+): Promise<string> {
   try {
     let context = "# Information From Your Mind\n\n";
-    let mermaidDiagrams: string[] = [];  // Initialize array to store Mermaid diagrams
 
     // Add Relationships Between Concepts
     context += "##  Concept Map\n\n";
@@ -87,10 +86,6 @@ export async function formatQueryWithContext(
     context += "# Chain-of-Thoughts Reasoning\n";
     for (const response of cotResponses) {
       context += response + "\n";
-      const mermaidMatches = response.match(/```mermaid[\s\S]*?```/g);  // Extract Mermaid diagrams
-      if (mermaidMatches) {
-        mermaidDiagrams.push(...mermaidMatches);
-      }
     }
 
     // Add conversation history to the context
@@ -130,7 +125,7 @@ export async function formatQueryWithContext(
     `;
 
     console.debug(`Formatted query length: ${formattedQuery.length} characters`);
-    return { formattedQuery, mermaidDiagrams };  // Return formatted query and Mermaid diagrams
+    return formattedQuery;
   } catch (error) {
     throw handleError(error, 'formatQueryWithContext');
   }

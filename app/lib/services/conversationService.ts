@@ -13,10 +13,6 @@ interface ConversationTurn {
   response: string;
 }
 
-interface MermaidDiagram {
-  content: string;
-}
-
 const HISTORY_DIR = path.join(process.cwd(), 'conversation_histories');
 
 export async function* processQuery(query: string, conversationHistory: ConversationTurn[]) {
@@ -54,7 +50,7 @@ export async function* processQuery(query: string, conversationHistory: Conversa
 
     // Format query with context, now including conversationHistory
     console.info('Formatting query with context');
-    const { formattedQuery, mermaidDiagrams } = await formatQueryWithContext(
+    const formattedQuery = await formatQueryWithContext(
       query,
       conversationHistory,
       events,
@@ -67,13 +63,6 @@ export async function* processQuery(query: string, conversationHistory: Conversa
     );
 
     console.info('Formatted query:', formattedQuery);
-
-    const processedMermaidDiagrams: MermaidDiagram[] = mermaidDiagrams.map(diagram => {
-      const content = diagram.split('\n').slice(1, -1).join('\n').trim();
-      return { content };
-    });
-
-    console.info('Processed Mermaid diagrams:', processedMermaidDiagrams);
 
     // Generate response using AI service
     const systemPrompt = `

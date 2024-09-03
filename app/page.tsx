@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { PlusCircle, Save, Trash2, Send } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { Button } from "./components/ui/button"
+import { Input } from "./components/ui/input"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./components/ui/card"
+import { ScrollArea } from "./components/ui/scroll-area"
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
