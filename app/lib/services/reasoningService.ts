@@ -28,55 +28,126 @@ export async function processChainOfThoughtQuestion(
     Incorporate branching paths to represent different outcomes or possibilities.
     Use color coding to depict emotions. 
 
-    Which of the following types of diagrams best capture your thinking regarding the question? 
+    # Deductive Reasoning
+        graph TD
+        A[Premise 1: Conflicts involve multiple actors and forms of tension]
+        B[Premise 2: Information details specific incidents and ongoing conflicts]
+        C[Conclusion: Major areas of conflict can be categorized by actors and nature]
+        
+        A --> C
+        B --> C
+        
+        C --> D[Categorization of Conflicts]
+        D --> E[By Actors Involved]
+        D --> F[By Nature of Conflict]
+        
+        E --> G[State vs State]
+        E --> H[State vs Non-State Actors]
+        E --> I[Internal Conflicts]
+        
+        F --> J[Military Clashes]
+        F --> K[Political Tensions]
+        F --> L[Economic Issues]
 
-    # Example: Sequence Diagram
-    sequenceDiagram
-    Alice->>John: Hello John, how are you?
-    John-->>Alice: Great!
-    Alice-)John: See you later!
+    # Inductive Reasoning
+        graph TD
+          A[Analysis of Specific Incidents and Patterns]
+          A --> B[Israel-Hezbollah Conflict]
+          A --> C[Israel-Palestine Tensions]
+          A --> D[Iran-Israel Tensions]
+          A --> E[Regional Maritime Security]
+          A --> F[Syria Conflict]
+          A --> G[Internal Israeli Political Tensions]
+          A --> H[Egypt-Ethiopia Tensions]
+          A --> I[Lebanon's Internal Crisis]
+          A --> J[Turkey's Regional Involvement]
+          A --> K[U.S. Involvement in Regional Conflicts]
+          
+          L[Inferred Major Areas of Conflict/Tension]
+          B --> L
+          C --> L
+          D --> L
+          E --> L
+          F --> L
+          G --> L
+          H --> L
+          I --> L
+          J --> L
+          K --> L
 
-    # Example: Flowchart
-    flowchart LR
-    A[Hard edge] -->|Link text| B(Round edge)
-    B --> C{Decision}
-    C -->|One| D[Result one]
-    C -->|Two| E[Result two]
+    # Abstract Reasoning
+        graph TD
+          A[Identify Patterns in Regional Conflicts]
+          A --> B[Power Dynamics]
+          A --> C[Resource Control]
+          A --> D[Ideological Differences]
+          A --> E[Historical Grievances]
+          
+          F[Abstract Concepts Underlying Conflicts]
+          B --> F
+          C --> F
+          D --> F
+          E --> F
+          
+          F --> G[Sovereignty Disputes]
+          F --> H[Religious Tensions]
+          F --> I[Economic Inequalities]
+          F --> J[Geopolitical Interests]
 
-    # Example: Quadrant Chart
-    quadrantChart
-    title Reach and engagement of campaigns
-    x-axis Low Reach --> High Reach
-    y-axis Low Engagement --> High Engagement
-    quadrant-1 We should expand
-    quadrant-2 Need to promote
-    quadrant-3 Re-evaluate
-    quadrant-4 May be improved
-    Campaign A: [0.3, 0.6]
-    Campaign B: [0.45, 0.23]
-    Campaign C: [0.57, 0.69]
-    Campaign D: [0.78, 0.34]
-    Campaign E: [0.40, 0.34]
-    Campaign F: [0.35, 0.78]
+    # Abductive Reasoning
+        graph TD
+          A[Observation: Multiple Ongoing Conflicts in Region]
+          A --> B[Hypothesis 1: Historical Unresolved Issues]
+          A --> C[Hypothesis 2: External Power Interference]
+          A --> D[Hypothesis 3: Resource Scarcity]
+          A --> E[Hypothesis 4: Ideological Differences]
+          
+          F[Best Explanation for Regional Tensions]
+          B --> F
+          C --> F
+          D --> F
+          E --> F
 
-    # Example: Mind Map
-    mindmap
-      root((mindmap))
-        Origins
-          Long history
-          ::icon(fa fa-book)
-          Popularisation
-            British popular psychology author Tony Buzan
-        Research
-          On effectiveness<br/>and features
-          On Automatic creation
-            Uses
-                Creative techniques
-                Strategic planning
-                Argument mapping
-        Tools
-          Pen and paper
-          Mermaid
+    # Analogical Reasoning
+        graph TD
+          A[Source: Historical Conflicts]
+          B[Target: Current Regional Tensions]
+          
+          A --> C[Shared Features]
+          B --> C
+          
+          C --> D[Territorial Disputes]
+          C --> E[Ethnic/Religious Divisions]
+          C --> F[Resource Competition]
+          C --> G[Power Imbalances]
+          
+          H[Inferred Similarities in Conflict Dynamics]
+          D --> H
+          E --> H
+          F --> H
+          G --> H
+
+    # Causal Reasoning
+        graph TD
+          A[Root Causes]
+          A --> B[Historical Borders]
+          A --> C[Religious Differences]
+          A --> D[Economic Disparities]
+          A --> E[External Interventions]
+          
+          F[Intermediate Effects]
+          B --> F
+          C --> F
+          D --> F
+          E --> F
+          
+          G[Current Major Areas of Conflict]
+          F --> G
+          
+          G --> H[Israel-Palestine Conflict]
+          G --> I[Iran-Saudi Rivalry]
+          G --> J[Syrian Civil War]
+          G --> K[Yemen Crisis]
 
     # Important Instructions
     Do not use parentheses, curly braces, square brackets, and percentage signs in node labels, as these characters are not supported by the Mermaid parser.
@@ -138,10 +209,9 @@ export async function processChainOfThoughtQuestion(
 
     context += `\n
       # Your Task
-        1. Analyze the following question using the provided knowledge: ${question}.
-        2. Apply the specified reasoning types to the question and knowledge: ${reasoningTypes.join(', ')}.
-        3. Determine the best type of Mermaid diagrams to visualize your thinking (refer to given Examples). 
-        4. Generate a Mermaid diagram appropraite for each type of reasoning.
+        1. Analyze the following question: ${question}.
+        2. Apply the following reasoning types to the question: ${reasoningTypes.join(', ')}.
+        3. Generate a Mermaid diagram appropriate for each type of reasoning.
     `;
 
     // Sanitize and encode the context and system prompt
