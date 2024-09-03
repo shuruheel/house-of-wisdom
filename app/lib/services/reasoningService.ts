@@ -96,8 +96,8 @@ export async function processChainOfThoughtQuestion(
       for await (const chunk of generateText(
         formattedContext,
         formattedSystemPrompt,
-        'anthropic',
-        'claude-3-5-sonnet-20240620'
+        'openai',
+        'gpt-4o-mini'
       )) {
         response += chunk;
       }

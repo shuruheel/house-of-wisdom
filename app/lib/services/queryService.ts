@@ -60,7 +60,7 @@ export async function extractQueryElements(query: string): Promise<QueryElements
     `;
 
     let fullResponse = '';
-    for await (const chunk of generateText(prompt, systemPrompt, 'anthropic', 'claude-3-5-sonnet-20240620')) {
+    for await (const chunk of generateText(prompt, systemPrompt, 'openai', 'gpt-4o-mini')) {
       fullResponse += chunk;
     }
 

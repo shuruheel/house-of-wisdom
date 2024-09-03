@@ -86,12 +86,14 @@ export async function* processQuery(query: string, conversationHistory: Conversa
     `;
 
     console.info('Calling generateText with formattedQuery and systemPrompt');
-    for await (const chunk of generateText(formattedQuery, systemPrompt, 'anthropic', 'claude-3-5-sonnet-20240620')) {
+    for await (const chunk of generateText(formattedQuery, systemPrompt, 'openai', 'gpt-4o-mini')) {
+      console.log('Yielding chunk:', chunk);
       yield { type: 'chunk', content: chunk };
     }
-    console.info('Finished generating text');
+    console.log('Finished generating text');
 
     // Yield mermaid diagrams
+    console.log('Yielding mermaid diagrams:', mermaidDiagrams);
     yield { type: 'mermaidDiagrams', content: mermaidDiagrams };
 
   } catch (error) {

@@ -135,13 +135,24 @@ export default function Home() {
         if (reader) {
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              console.log('Stream finished');
+              break;
+            }
             const chunk = new TextDecoder().decode(value);
+            console.log('Received chunk:', chunk);
             const lines = chunk.split('\n\n');
             for (const line of lines) {
               if (line.startsWith('data: ')) {
                 const data = JSON.parse(line.slice(6));
-                aiMessage.text += data.chunk;
+                console.log('Parsed data:', data);
+                if (data.chunk) {
+                  aiMessage.text += data.chunk;
+                  console.log('Updated AI message:', aiMessage.text);
+                } else if (data.mermaidDiagrams) {
+                  aiMessage.mermaidDiagrams = data.mermaidDiagrams;
+                  console.log('Received mermaid diagrams:', data.mermaidDiagrams);
+                }
                 setConversations(prevConvs => prevConvs.map(conv =>
                   conv.id === activeConversationId
                     ? { ...conv, messages: [...(conv.messages || []).filter(m => m.id !== aiMessage.id), aiMessage] }

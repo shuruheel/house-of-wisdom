@@ -46,17 +46,23 @@ async function handleQueryConversation({ query, conversationId }: { query: strin
 
       try {
         for await (const result of queryGenerator) {
+          console.log('Processing result:', JSON.stringify(result));
           switch (result.type) {
             case 'chunk':
-              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ chunk: result.content })}\n\n`));
-              fullResponse += result.content;
+              const safeContent = result.content ?? ''; // Safeguard against undefined
+              console.log('Enqueueing chunk:', safeContent);
+              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ chunk: safeContent })}\n\n`));
+              fullResponse += safeContent;
               break;
             case 'mermaidDiagrams':
-              mermaidDiagrams = Array.isArray(result.content) ? result.content : [result.content];
+              mermaidDiagrams = Array.isArray(result.content) ? result.content : [result.content].filter(Boolean);
+              console.log('Enqueueing mermaid diagrams:', JSON.stringify(mermaidDiagrams));
               controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ mermaidDiagrams })}\n\n`));
               break;
             case 'error':
-              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ error: result.content })}\n\n`));
+              const errorMessage = result.content || 'An unknown error occurred';
+              console.log('Enqueueing error:', errorMessage);
+              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ error: errorMessage })}\n\n`));
               break;
           }
         }
@@ -64,15 +70,19 @@ async function handleQueryConversation({ query, conversationId }: { query: strin
         console.error('Error processing message:', error);
         controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ error: 'An error occurred while processing your message.' })}\n\n`));
       } finally {
+        console.log('Full response before processing:', fullResponse);
+        const safeResponse = fullResponse.replace(/undefined$/, '').trim();
+        console.log('Safe response after processing:', safeResponse);
         await saveConversationHistory(conversationId, [
           ...conversationHistory,
-          { text: query, response: fullResponse, mermaidDiagrams } as ConversationTurn,
+          { text: query, response: safeResponse, mermaidDiagrams } as ConversationTurn,
         ]);
         controller.close();
       }
     },
   });
 
+  console.log('Returning stream response');
   return new NextResponse(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
