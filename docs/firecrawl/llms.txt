@@ -1,0 +1,98 @@
+# Firecrawl - llms.txt
+
+## Overview
+
+This file contains a comprehensive list of Firecrawl resources, documentation, and blog posts.
+
+## Core Resources
+
+- [Web Data Extraction](https://www.firecrawl.dev/) - Transform websites into clean, LLM-ready data effortlessly.
+- [Flexible Web Scraping Pricing](https://www.firecrawl.dev/pricing) - Flexible pricing plans for web scraping services available.
+- [Web Scraping and AI Blog](https://www.firecrawl.dev/blog) - Explore tutorials and articles on web scraping and AI.
+- [Firecrawl Changelog Updates](https://www.firecrawl.dev/changelog) - Comprehensive changelog detailing updates and improvements for Firecrawl.
+
+## Features
+
+- [Web Data Extraction Tool](https://www.firecrawl.dev/extract) - Effortlessly extract structured data from any website using AI.
+- [Web Data Playground](https://www.firecrawl.dev/playground) - Explore web data extraction and scraping tools easily.
+- [Smart Crawl](https://www.firecrawl.dev/smart-crawl) - Transform any website into an API using AI technology.
+
+## Authentication & Account
+
+- [Sign In Page](https://www.firecrawl.dev/signin/password_signin) - Securely sign in using email or OAuth options.
+- [Email Sign In](https://www.firecrawl.dev/signin/email_signin) - Sign in with email or OAuth for Firecrawl services.
+- [Sign Up Page](https://www.firecrawl.dev/signin/signup) - Create an account to access Firecrawl features.
+- [Password Reset Page](https://www.firecrawl.dev/signin/forgot_password) - Easily reset your password using your email address.
+
+## Legal & Policies
+
+- [Privacy Policy Overview](https://www.firecrawl.dev/privacy-policy) - Comprehensive privacy policy detailing data collection and usage.
+- [Firecrawl Terms of Service](https://www.firecrawl.dev/terms-of-service) - Comprehensive terms of service for Firecrawl's web data services.
+
+## Launch Week
+
+- [Firecrawl Launch Week II](https://www.firecrawl.dev/launch-week) - Exciting updates and features from Firecrawl's Launch Week II.
+- [Firecrawl Launch Week Recap](https://www.firecrawl.dev/blog/firecrawl-launch-week-1-recap) - Recap of Firecrawl's Launch Week features and updates.
+- [Crawl Webhooks Introduction](https://www.firecrawl.dev/blog/launch-week-i-day-7-webhooks) - Discover new webhook support for web crawling events.
+- [LLM Extract Introduction](https://www.firecrawl.dev/blog/launch-week-i-day-6-llm-extract) - Discover LLM Extract for structured web data extraction.
+
+## Blog Posts & Tutorials
+
+### Getting Started
+
+- [Chatbot for Websites](https://www.firecrawl.dev/blog/chat-with-website) - Learn to build a chatbot for your website using Groq.
+- [Mastering Firecrawl Scrape API](https://www.firecrawl.dev/blog/mastering-firecrawl-scrape-endpoint) - Master web scraping with Firecrawl's powerful API features.
+- [Mastering Firecrawl's Crawl Endpoint](https://www.firecrawl.dev/blog/mastering-the-crawl-endpoint-in-firecrawl) - Comprehensive guide on using Firecrawl's crawl endpoint for web scraping.
+- [cURL Authentication Guide](https://www.firecrawl.dev/blog/complete-guide-to-curl-authentication-firecrawl-api) - Learn to scrape authenticated websites using cURL and Firecrawl.
+
+### AI & LLM Integration
+
+- [Data Extraction Guide](https://www.firecrawl.dev/blog/data-extraction-using-llms) - Learn to extract web data using LLMs and Firecrawl.
+- [CrawlBench LLM Evaluation](https://www.firecrawl.dev/blog/crawlbench-llm-extraction) - Explore CrawlBench for evaluating LLM data extraction performance.
+- [Structured Web Data Extraction](https://www.firecrawl.dev/blog/introducing-extract-open-beta) - Easily extract structured web data with simple prompts.
+- [LLM Extraction for Insights](https://www.firecrawl.dev/blog/lead-gen-business-insights-make-firecrawl) - Automate customer insights extraction using LLM and Firecrawl.
+- [DeepSeek Documentation Assistant](https://www.firecrawl.dev/blog/deepseek-rag-documentation-assistant) - Explore how to build a documentation assistant using DeepSeek and Firecrawl.
+- [Website Contradiction Agent](https://www.firecrawl.dev/blog/contradiction-agent) - Learn to build an agent for detecting website contradictions.
+
+### OpenAI & AI Models
+
+- [OpenAI Swarm Marketing Tutorial](https://www.firecrawl.dev/blog/openai-swarm-agent-tutorial) - Learn to create AI-driven marketing campaigns using OpenAI.
+- [OpenAI Predicted Outputs Guide](https://www.firecrawl.dev/blog/getting-started-with-predicted-outputs-openai) - Learn to use OpenAI's Predicted Outputs for faster LLM responses.
+- [Prompt Caching Guide](https://www.firecrawl.dev/blog/using-prompt-caching-with-anthropic) - Learn to use prompt caching with Anthropic models effectively.
+- [Grok-2 Setup Guide](https://www.firecrawl.dev/blog/grok-2-setup-and-web-crawler-example) - Learn to set up Grok-2 and build a web crawler.
+
+### Web Scraping Projects
+
+- [Python Web Scraping Projects](https://www.firecrawl.dev/blog/python-web-scraping-projects) - Explore 15 Python web scraping projects for all skill levels.
+- [Automated Web Scraping](https://www.firecrawl.dev/blog/automated-web-scraping-free-2025) - Learn to automate web scraping in Python using free tools.
+- [Automated Price Tracking](https://www.firecrawl.dev/blog/automated-price-tracking-tutorial-python) - Learn to build a Python app for automated price tracking.
+- [Job Board Scraping Guide](https://www.firecrawl.dev/blog/scrape-job-boards-firecrawl-openai) - Learn to scrape job boards using Firecrawl and OpenAI.
+- [Crunchbase Data Scraping](https://www.firecrawl.dev/blog/crunchbase-scraping-with-firecrawl-claude) - Learn to scrape company data and funding info efficiently.
+- [AI Resume Job Matcher](https://www.firecrawl.dev/blog/ai-resume-parser-job-matcher-python) - Automate job matching using AI resume parser and web scraping.
+
+### Technical Deep Dives
+
+- [BeautifulSoup4 vs Scrapy](https://www.firecrawl.dev/blog/beautifulsoup4-vs-scrapy-comparison) - A detailed comparison of BeautifulSoup4 and Scrapy for web scraping.
+- [Install BeautifulSoup Easily](https://www.firecrawl.dev/blog/how-to-quickly-install-beautifulsoup-with-python) - Quickly install BeautifulSoup for web scraping with Python.
+- [Fire Engine for Firecrawl](https://www.firecrawl.dev/blog/introducing-fire-engine-for-firecrawl) - Discover Fire Engine, Firecrawl's new web scraping solution.
+- [Scaling Firecrawl's Requests](https://www.firecrawl.dev/blog/an-adventure-in-scaling) - Learn how Firecrawl scaled to handle 300k requests daily.
+- [Fix Cloudflare Error 1015](https://www.firecrawl.dev/blog/cloudflare-error-1015-how-to-solve-it) - Learn how to resolve Cloudflare Error 1015 effectively.
+
+### Company Use Cases
+
+- [Gamma Onboarding Supercharged](https://www.firecrawl.dev/blog/how-gamma-supercharges-onboarding-with-firecrawl) - Gamma enhances onboarding with Firecrawl for effortless web data.
+
+### Product Updates
+
+- [Introducing Teams Feature](https://www.firecrawl.dev/blog/launch-week-i-day-1-introducing-teams) - Introducing Teams feature for collaborative web scraping projects.
+- [Firecrawl July 2024 Updates](https://www.firecrawl.dev/blog/firecrawl-july-2024-updates) - Exciting updates on Firecrawl's July 2024 developments and improvements.
+
+## Playground Examples
+
+- [Web Data Extraction Playground](https://www.firecrawl.dev/playground?mode=extract) - Interactive playground for web data extraction with schema definition.
+- [LLM Extract Playground](https://www.firecrawl.dev/playground?mode=llm-extract) - Explore web data extraction with interactive API tools.
+
+---
+
+**Note**: This file is auto-generated and maintained by Firecrawl. For the most up-to-date information, visit [firecrawl.dev](https://www.firecrawl.dev/).
+

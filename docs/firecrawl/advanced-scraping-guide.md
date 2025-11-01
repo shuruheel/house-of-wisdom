@@ -1,0 +1,356 @@
+# Advanced Scraping Guide
+
+Learn how to improve your Firecrawl scraping with advanced options.
+
+This guide will walk you through the different endpoints of Firecrawl and how to use them fully with all its parameters.
+
+## Basic scraping with Firecrawl
+
+To scrape a single page and get clean markdown content, you can use the `/scrape` endpoint.
+
+```typescript
+// npm install @mendable/firecrawl-js
+
+import Firecrawl from '@mendable/firecrawl-js';
+
+const firecrawl = new Firecrawl({ apiKey: 'fc-YOUR-API-KEY' });
+
+const doc = await firecrawl.scrape('https://firecrawl.dev');
+
+console.log(doc.markdown);
+```
+
+## Scraping PDFs
+
+Firecrawl supports PDFs. Use the parsers option (e.g., `parsers: ['pdf']`) when you want to ensure PDF parsing.
+
+## Scrape options
+
+When using the `/scrape` endpoint, you can customize scraping with the options below.
+
+### Formats (formats)
+
+- **Type**: array
+- **Strings**: `['markdown', 'links', 'html', 'rawHtml', 'summary', 'images']`
+- **Object formats**:
+  - JSON: `{ type: 'json', prompt, schema }`
+  - Screenshot: `{ type: 'screenshot', fullPage?, quality?, viewport? }`
+  - Change tracking: `{ type: 'changeTracking', modes?, prompt?, schema?, tag? }` (requires markdown)
+- **Default**: `['markdown']`
+
+### Full page content vs main content (onlyMainContent)
+
+- **Type**: boolean
+- **Description**: By default the scraper returns only the main content. Set to false to return full page content.
+- **Default**: true
+
+### Include tags (includeTags)
+
+- **Type**: array
+- **Description**: HTML tags/classes/ids to include in the scrape.
+
+### Exclude tags (excludeTags)
+
+- **Type**: array
+- **Description**: HTML tags/classes/ids to exclude from the scrape.
+
+### Wait for page readiness (waitFor)
+
+- **Type**: integer
+- **Description**: Milliseconds to wait before scraping (use sparingly).
+- **Default**: 0
+
+### Freshness and cache (maxAge)
+
+- **Type**: integer (milliseconds)
+- **Description**: If a cached version of the page is newer than maxAge, Firecrawl returns it instantly; otherwise it scrapes fresh and updates the cache. Set 0 to always fetch fresh.
+- **Default**: 172800000 (2 days)
+
+### Request timeout (timeout)
+
+- **Type**: integer
+- **Description**: Max duration in milliseconds before aborting.
+- **Default**: 30000 (30 seconds)
+
+### PDF parsing (parsers)
+
+- **Type**: array
+- **Description**: Control parsing behavior. To parse PDFs, set `parsers: ['pdf']`.
+
+## Actions (actions)
+
+When using the `/scrape` endpoint, Firecrawl allows you to perform various actions on a web page before scraping its content. This is particularly useful for interacting with dynamic content, navigating through pages, or accessing content that requires user interaction.
+
+- **Type**: array
+- **Description**: Sequence of browser steps to run before scraping.
+
+Supported actions:
+
+- `wait { milliseconds }`
+- `click { selector }`
+- `write { selector, text }`
+- `press { key }`
+- `scroll { direction: 'up' | 'down' }`
+- `scrape { selector }` (scrape a sub-element)
+- `executeJavascript { script }`
+- `pdf` (trigger PDF render in some flows)
+
+```typescript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const firecrawl = new Firecrawl({ apiKey: 'fc-YOUR-API-KEY' });
+
+const doc = await firecrawl.scrape('https://example.com', {
+  actions: [
+    { type: 'wait', milliseconds: 1000 },
+    { type: 'click', selector: '#accept' },
+    { type: 'scroll', direction: 'down' },
+    { type: 'write', selector: '#q', text: 'firecrawl' },
+    { type: 'press', key: 'Enter' }
+  ],
+  formats: ['markdown']
+});
+
+console.log(doc.markdown);
+```
+
+## Example Usage
+
+```bash
+curl -X POST https://api.firecrawl.dev/v2/scrape \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Bearer fc-YOUR-API-KEY' \
+    -d '{
+      "url": "https://docs.firecrawl.dev",
+      "formats": [
+        "markdown",
+        "links",
+        "html",
+        "rawHtml",
+        { "type": "screenshot", "fullPage": true, "quality": 80 }
+      ],
+      "includeTags": ["h1", "p", "a", ".main-content"],
+      "excludeTags": ["#ad", "#footer"],
+      "onlyMainContent": false,
+      "waitFor": 1000,
+      "timeout": 15000,
+      "parsers": ["pdf"]
+    }'
+```
+
+In this example, the scraper will:
+
+- Return the full page content as markdown.
+- Include the markdown, raw HTML, HTML, links, and a screenshot in the response.
+- Include only the HTML tags `<h1>`, `<p>`, `<a>`, and elements with the class `.main-content`, while excluding any elements with the IDs `#ad` and `#footer`.
+- Wait for 1000 milliseconds (1 second) before scraping to allow the page to load.
+- Set the maximum duration of the scrape request to 15000 milliseconds (15 seconds).
+- Parse PDFs explicitly via `parsers: ['pdf']`.
+
+## JSON extraction via formats
+
+Use the JSON format object in formats to extract structured data in one pass:
+
+```bash
+curl -X POST https://api.firecrawl.dev/v2/scrape \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer fc-YOUR-API-KEY' \
+  -d '{
+    "url": "https://firecrawl.dev",
+    "formats": [{
+      "type": "json",
+      "prompt": "Extract the features of the product",
+      "schema": {"type": "object", "properties": {"features": {"type": "object"}}, "required": ["features"]}
+    }]
+  }'
+```
+
+## Extract endpoint
+
+Use the dedicated extract job API when you want asynchronous extraction with status polling.
+
+```typescript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const firecrawl = new Firecrawl({ apiKey: 'fc-YOUR-API-KEY' });
+
+// Start extract job
+const started = await firecrawl.startExtract({
+  urls: ['https://docs.firecrawl.dev'],
+  prompt: 'Extract title',
+  schema: { 
+    type: 'object', 
+    properties: { title: { type: 'string' } }, 
+    required: ['title'] 
+  }
+});
+
+// Poll status
+const status = await firecrawl.getExtractStatus(started.id);
+console.log(status.status, status.data);
+```
+
+## Crawling multiple pages
+
+To crawl multiple pages, use the `/v2/crawl` endpoint.
+
+```bash
+curl -X POST https://api.firecrawl.dev/v2/crawl \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Bearer fc-YOUR-API-KEY' \
+    -d '{
+      "url": "https://docs.firecrawl.dev"
+    }'
+```
+
+Returns an id:
+
+```json
+{ "id": "1234-5678-9101" }
+```
+
+### Check Crawl Job
+
+Used to check the status of a crawl job and get its result.
+
+```bash
+curl -X GET https://api.firecrawl.dev/v2/crawl/1234-5678-9101 \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer fc-YOUR-API-KEY'
+```
+
+### Pagination/Next URL
+
+If the content is larger than 10MB or if the crawl job is still running, the response may include a `next` parameter, a URL to the next page of results.
+
+### Crawl prompt and params preview
+
+You can provide a natural-language prompt to let Firecrawl derive crawl settings. Preview them first:
+
+```bash
+curl -X POST https://api.firecrawl.dev/v2/crawl/params-preview \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer fc-YOUR-API-KEY' \
+  -d '{
+    "url": "https://docs.firecrawl.dev",
+    "prompt": "Extract docs and blog"
+  }'
+```
+
+## Crawler options
+
+When using the `/v2/crawl` endpoint, you can customize the crawling behavior with:
+
+### includePaths
+
+- **Type**: array
+- **Description**: Regex patterns to include.
+- **Example**: `['^/blog/.*$', '^/docs/.*$']`
+
+### excludePaths
+
+- **Type**: array
+- **Description**: Regex patterns to exclude.
+- **Example**: `['^/admin/.*$', '^/private/.*$']`
+
+### maxDiscoveryDepth
+
+- **Type**: integer
+- **Description**: Max discovery depth for finding new URLs.
+
+### limit
+
+- **Type**: integer
+- **Description**: Max number of pages to crawl.
+- **Default**: 10000
+
+### crawlEntireDomain
+
+- **Type**: boolean
+- **Description**: Explore across siblings/parents to cover the entire domain.
+- **Default**: false
+
+### allowExternalLinks
+
+- **Type**: boolean
+- **Description**: Follow links to external domains.
+- **Default**: false
+
+### allowSubdomains
+
+- **Type**: boolean
+- **Description**: Follow subdomains of the main domain.
+- **Default**: false
+
+### delay
+
+- **Type**: number
+- **Description**: Delay in seconds between scrapes.
+- **Default**: undefined
+
+### scrapeOptions
+
+- **Type**: object
+- **Description**: Options for the scraper (see Formats above).
+- **Example**: `{ "formats": ["markdown", "links", {"type": "screenshot", "fullPage": true}], "includeTags": ["h1", "p", "a", ".main-content"], "excludeTags": ["#ad", "#footer"], "onlyMainContent": false, "waitFor": 1000, "timeout": 15000}`
+- **Defaults**: `formats: ["markdown"]`, caching enabled by default (maxAge ~ 2 days)
+
+### Example Usage
+
+```bash
+curl -X POST https://api.firecrawl.dev/v2/crawl \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Bearer fc-YOUR-API-KEY' \
+    -d '{
+      "url": "https://docs.firecrawl.dev",
+      "includePaths": ["^/blog/.*$", "^/docs/.*$"],
+      "excludePaths": ["^/admin/.*$", "^/private/.*$"],
+      "maxDiscoveryDepth": 2,
+      "limit": 1000
+    }'
+```
+
+## Mapping website links
+
+The `/v2/map` endpoint identifies URLs related to a given website.
+
+### Usage
+
+```bash
+curl -X POST https://api.firecrawl.dev/v2/map \
+    -H 'Content-Type: application/json' \
+    -H 'Authorization: Bearer fc-YOUR-API-KEY' \
+    -d '{
+      "url": "https://docs.firecrawl.dev"
+    }'
+```
+
+### Map Options
+
+#### search
+
+- **Type**: string
+- **Description**: Filter links containing text.
+
+#### limit
+
+- **Type**: integer
+- **Description**: Maximum number of links to return.
+- **Default**: 100
+
+#### sitemap
+
+- **Type**: `'only' | 'include' | 'skip'`
+- **Description**: Control sitemap usage during mapping.
+- **Default**: `'include'`
+
+#### includeSubdomains
+
+- **Type**: boolean
+- **Description**: Include subdomains of the website.
+- **Default**: true
+
+---
+
+Thanks for reading!
+
