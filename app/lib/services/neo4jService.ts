@@ -39,6 +39,10 @@ export async function closeDriver(): Promise<void> {
   }
 }
 
+/**
+ * Get relevant events and claims using vector similarity search
+ * Updated to use new vector indexes: event_embedding_index, claim_embedding_index
+ */
 export async function getRelevantEventsAndClaims(
   queryEmbedding: number[],
   maxEvents = 20,
@@ -53,30 +57,29 @@ export async function getRelevantEventsAndClaims(
       `
         CALL () {
         WITH $query_date_range AS query_date_range
-        MATCH (n:Event)
-        WHERE n.embedding IS NOT NULL 
-        AND n.start_date <= date()
-        AND CASE
-            WHEN query_date_range = 'recent' THEN n.start_date >= date() - duration('P1Y')
-            WHEN query_date_range = 'latest' THEN n.start_date >= date() - duration('P3M')
-            WHEN query_date_range = 'historic' THEN n.start_date < date() - duration('P50Y')
-            ELSE true
-        END
-        RETURN n, 'Event' AS type, n.start_date AS start_date, n.emotion AS emotion, n.emotion_intensity AS emotion_intensity, null AS confidence
+        // Query events using vector index
+        CALL db.index.vector.queryNodes('event_embedding_index', $max_events, $query_embedding)
+        YIELD node AS n, score AS similarity
+        WHERE similarity >= $similarity_threshold
+          AND n.start_date <= date()
+          AND CASE
+              WHEN query_date_range = 'recent' THEN n.start_date >= date() - duration('P1Y')
+              WHEN query_date_range = 'latest' THEN n.start_date >= date() - duration('P3M')
+              WHEN query_date_range = 'historic' THEN n.start_date < date() - duration('P50Y')
+              ELSE true
+          END
+        RETURN n, 'Event' AS type, n.start_date AS start_date, n.emotion AS emotion,
+               n.emotion_intensity AS emotion_intensity, null AS confidence, similarity
         UNION
+        // Query claims using vector index
         WITH $query_date_range AS query_date_range
-        MATCH (n:Claim)
-        WHERE n.embedding IS NOT NULL
-        RETURN n, 'Claim' AS type, null AS start_date, null AS emotion, null AS emotion_intensity, n.confidence AS confidence
+        CALL db.index.vector.queryNodes('claim_embedding_index', $max_claims, $query_embedding)
+        YIELD node AS n, score AS similarity
+        WHERE similarity >= $similarity_threshold
+        RETURN n, 'Claim' AS type, null AS start_date, null AS emotion,
+               null AS emotion_intensity, n.confidence AS confidence, similarity
     }
-    WITH n, type, start_date, n.embedding AS embedding, date() AS current_date, emotion, emotion_intensity, confidence
-
-    // Cosine similarity calculation
-    WITH n, type, start_date, embedding, current_date, emotion, emotion_intensity, confidence,
-        reduce(dot = 0.0, i IN range(0, size(embedding)-1) | dot + embedding[i] * $query_embedding[i]) /
-        (sqrt(reduce(l2 = 0.0, i IN range(0, size(embedding)-1) | l2 + embedding[i]^2)) * 
-        sqrt(reduce(l2 = 0.0, i IN range(0, size($query_embedding)-1) | l2 + $query_embedding[i]^2))) AS similarity
-    WHERE similarity >= $similarity_threshold
+    WITH n, type, start_date, similarity, date() AS current_date, emotion, emotion_intensity, confidence
 
     // Time relevance calculation
     WITH n, type, start_date, similarity, current_date, emotion, emotion_intensity, confidence,
@@ -96,7 +99,7 @@ export async function getRelevantEventsAndClaims(
                 exp(-years_ago * $recent_coeff * 2)
             WHEN $query_date_range = 'historic' THEN
                 1 - exp(-years_ago / $historic_coeff)
-            ELSE 
+            ELSE
                 1 / (1 + years_ago / $default_coeff)
             END
         WHEN type = 'Claim' THEN 1
@@ -105,7 +108,7 @@ export async function getRelevantEventsAndClaims(
 
     // Combine scores
     WITH n, similarity, time_relevance, type, start_date, years_ago, current_date, emotion, emotion_intensity, confidence,
-        CASE 
+        CASE
         WHEN type = 'Event' THEN (similarity * 0.7) + (time_relevance * 0.3)
         ELSE similarity
         END AS combined_score
@@ -113,13 +116,15 @@ export async function getRelevantEventsAndClaims(
     // Sort and collect results
     ORDER BY combined_score DESC
     WITH type, COLLECT({node: n, score: combined_score, similarity: similarity, time_relevance: time_relevance, start_date: start_date, years_ago: years_ago, current_date: current_date, emotion: emotion, emotion_intensity: emotion_intensity, confidence: confidence})[0..$max_items] AS items
-    RETURN type, items  
+    RETURN type, items
       `,
       {
         query_embedding: queryEmbedding,
         similarity_threshold: similarityThreshold,
         query_date_range: queryDateRange,
         max_items: Math.max(maxEvents, maxClaims),
+        max_events: maxEvents,
+        max_claims: maxClaims,
         recent_coeff: 0.33,
         historic_coeff: 50,
         default_coeff: 5,
@@ -133,8 +138,6 @@ export async function getRelevantEventsAndClaims(
     for (const record of records) {
       const itemType = record.get('type');
       const items = record.get('items');
-
-      // console.log(`Retrieved ${items.length} ${itemType}s`);
 
       for (const item of items) {
         const properties = item.node.properties;
@@ -156,8 +159,6 @@ export async function getRelevantEventsAndClaims(
       }
     }
 
-    // console.log(`Processed ${events.length} events and ${claims.length} claims`);
-
     return {
       events: events.slice(0, maxEvents),
       claims: claims.slice(0, maxClaims),
@@ -168,6 +169,10 @@ export async function getRelevantEventsAndClaims(
   }
 }
 
+/**
+ * Get relevant concept relationships using vector similarity search
+ * Updated to use concept_embedding_index
+ */
 export async function getRelevantConceptRelationships(
   queryEmbedding: number[],
   maxRelationships: Integer,
@@ -178,19 +183,16 @@ export async function getRelevantConceptRelationships(
   try {
     const { records } = await driver.executeQuery(
       `
-        MATCH (concept1:Concept)
-        WHERE concept1.embedding IS NOT NULL
-        // Cosine similarity calculation
-        WITH concept1,
-            reduce(dot = 0.0, i IN range(0, size(concept1.embedding)-1) | dot + concept1.embedding[i] * $query_embedding[i]) /
-            (sqrt(reduce(l2 = 0.0, i IN range(0, size(concept1.embedding)-1) | l2 + concept1.embedding[i]^2)) *
-            sqrt(reduce(l2 = 0.0, i IN range(0, size($query_embedding)-1) | l2 + $query_embedding[i]^2))) AS similarity
+        // Use vector index for initial concept search
+        CALL db.index.vector.queryNodes('concept_embedding_index', $max_items, $query_embedding)
+        YIELD node AS concept1, score AS similarity
         WHERE similarity >= $similarity_threshold
+
+        // Find relationships
         WITH concept1, similarity
         ORDER BY similarity DESC
-        // Find relationships
         MATCH (concept1)-[relationship]-(concept2:Concept)
-        WHERE concept2.embedding IS NOT NULL
+
         // Collect results
         WITH concept1, concept2, relationship, similarity
         ORDER BY similarity DESC
@@ -204,17 +206,13 @@ export async function getRelevantConceptRelationships(
         })[0..$max_items] AS items
         RETURN items
       `,
-      { 
-        query_embedding: queryEmbedding, 
-        similarity_threshold: similarityThreshold, 
+      {
+        query_embedding: queryEmbedding,
+        similarity_threshold: similarityThreshold,
         max_items: maxRelationships
       },
       { database: 'god' }
     );
-    
-    // console.log(
-    //   `The query returned ${records.length} records in ${summary.resultAvailableAfter} ms.`
-    // );
 
     const concepts: { [key: string]: any } = {};
     const relationships: any[] = [];
@@ -258,6 +256,10 @@ export async function getRelevantConceptRelationships(
   }
 }
 
+/**
+ * Get relevant legal references (Articles, Amendments, Provisions, and Scopes)
+ * Updated to use new vector indexes including scope_embedding_index
+ */
 export async function getRelevantLegalReferences(
   queryEmbedding: number[],
   similarityThreshold: number,
@@ -266,32 +268,38 @@ export async function getRelevantLegalReferences(
   const driver = await getDriver();
   const cypherQuery = `
     CALL () {
-      CALL db.index.vector.queryNodes('article_embedding', $max_items, $query_embedding) 
-      YIELD node AS n, score AS similarity 
-      WHERE similarity >= $similarity_threshold 
+      CALL db.index.vector.queryNodes('article_embedding_index', $max_items, $query_embedding)
+      YIELD node AS n, score AS similarity
+      WHERE similarity >= $similarity_threshold
       RETURN n, similarity, 'Article' AS type
       UNION ALL
-      CALL db.index.vector.queryNodes('amendment_embedding', $max_items, $query_embedding) 
-      YIELD node AS n, score AS similarity 
-      WHERE similarity >= $similarity_threshold 
+      CALL db.index.vector.queryNodes('amendment_embedding_index', $max_items, $query_embedding)
+      YIELD node AS n, score AS similarity
+      WHERE similarity >= $similarity_threshold
       RETURN n, similarity, 'Amendment' AS type
       UNION ALL
-      CALL db.index.vector.queryNodes('provision_embedding', $max_items, $query_embedding) 
+      CALL db.index.vector.queryNodes('provision_embedding_index', $max_items, $query_embedding)
       YIELD node AS n, score AS similarity
       WHERE similarity >= $similarity_threshold
         AND NOT n.section_title IN ['Transferred', 'Repealed', 'Omitted']
       RETURN n, similarity, 'Provision' AS type
+      UNION ALL
+      CALL db.index.vector.queryNodes('scope_embedding_index', $max_items, $query_embedding)
+      YIELD node AS n, score AS similarity
+      WHERE similarity >= $similarity_threshold
+      RETURN n, similarity, 'Scope' AS type
     }
     WITH n, similarity, type
     RETURN {
       type: type,
       title: CASE WHEN type IN ['Article', 'Amendment'] THEN n.title ELSE null END,
       content: n.content,
-      title_number: CASE WHEN type = 'Provision' THEN n.title_number ELSE null END,
-      chapter_number: CASE WHEN type = 'Provision' THEN n.chapter_number ELSE null END,
-      chapter_title: CASE WHEN type = 'Provision' THEN n.chapter_title ELSE null END,
-      section_number: CASE WHEN type = 'Provision' THEN n.section_number ELSE null END,
-      section_title: CASE WHEN type = 'Provision' THEN n.section_title ELSE null END,
+      title_number: CASE WHEN type IN ['Provision', 'Scope'] THEN n.title_number ELSE null END,
+      chapter_number: CASE WHEN type IN ['Provision', 'Scope'] THEN n.chapter_number ELSE null END,
+      chapter_title: CASE WHEN type IN ['Provision', 'Scope'] THEN n.chapter_title ELSE null END,
+      section_number: CASE WHEN type IN ['Provision', 'Scope'] THEN n.section_number ELSE null END,
+      section_title: CASE WHEN type IN ['Provision', 'Scope'] THEN n.section_title ELSE null END,
+      label: CASE WHEN type = 'Scope' THEN n.label ELSE null END,
       similarity: similarity
     } AS result
     ORDER BY similarity DESC
@@ -313,6 +321,10 @@ export async function getRelevantLegalReferences(
   }
 }
 
+/**
+ * Execute custom Cypher query with fallback
+ * Updated to reference all available vector indexes
+ */
 export async function executeCustomCypherQuery(
   queryEmbedding: number[],
   cypherQuery: string,
@@ -321,9 +333,10 @@ export async function executeCustomCypherQuery(
 ): Promise<any[]> {
   const driver = await getDriver();
   const fallbackQuery = `
-    CALL db.index.vector.queryNodes('provision_embedding', $max_items, $query_embedding) 
+    CALL db.index.vector.queryNodes('provision_embedding_index', $max_items, $query_embedding)
     YIELD node AS n, score AS similarity
     WHERE similarity >= $similarity_threshold
+      AND NOT n.section_title IN ['Transferred', 'Repealed', 'Omitted']
     OPTIONAL MATCH (n)-[:MENTIONS]->(e:Entity)
     OPTIONAL MATCH (n)-[:MENTIONS]->(c:Concept)
     WITH n, similarity, collect(DISTINCT e.name) AS entities, collect(DISTINCT c.name) AS concepts
@@ -331,7 +344,8 @@ export async function executeCustomCypherQuery(
         content: n.content,
         title_number: n.title_number,
         chapter_number: n.chapter_number,
-        section: n.section_number,
+        section_number: n.section_number,
+        section_title: n.section_title,
         similarity: similarity,
         entities: entities,
         concepts: concepts

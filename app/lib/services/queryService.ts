@@ -1,124 +1,111 @@
-import { generateText } from './aiService';
+import { generateObject, generateText as aiGenerateText } from 'ai';
+import { z } from 'zod';
 import { RateLimiter } from 'limiter';
+import { getModel, recommendedModels } from './aiService';
 
 const limiter = new RateLimiter({ tokensPerInterval: 5, interval: 'minute' });
 
-interface QueryElements {
-  key_entities: string[];
-  key_concepts: string[];
-  time_reference: string | null;
-  legal_question: string;
-  chain_of_thought_questions: {
-    question: string;
-    reasoning_types: string[];
-  }[];
-  ideal_mix: {
-    events: number;
-    claims_ideas: number;
-    chunks: number;
-    concept_relationships: number;
-  };
-}
+// Zod schema for query elements - ensures type-safe structured output
+const queryElementsSchema = z.object({
+  key_entities: z.array(z.string()).describe('Specific people, places, organizations, or tangible objects'),
+  key_concepts: z.array(z.string()).describe('Abstract ideas, themes, or intangible notions'),
+  time_reference: z.string().nullable().describe('Specific dates, periods, or temporal contexts'),
+  domain_specific_terms: z.array(z.string()).optional().describe('Specialized vocabulary relevant to the query\'s field'),
+  primary_domain: z.string().optional().describe('Primary domain of the query (legal, scientific, historical, economic, or general)'),
+  legal_question: z.enum(['yes', 'no']).describe('Whether this is a legal question'),
+  chain_of_thought_questions: z.array(z.object({
+    question: z.string(),
+    reasoning_types: z.array(z.enum(['deductive', 'inductive', 'abductive', 'analogical', 'causal'])),
+    relevance: z.string().optional().describe('Why this question is important for the analysis'),
+  })).describe('Chain-of-thought questions to guide reasoning'),
+  domain_specific_considerations: z.array(z.string()).optional().describe('Domain-specific considerations'),
+  ideal_mix: z.object({
+    events: z.number().int(),
+    claims_ideas: z.number().int(),
+    chunks: z.number().int(),
+    concept_relationships: z.number().int(),
+  }).optional().describe('Ideal mix of knowledge types to retrieve'),
+});
 
+export type QueryElements = z.infer<typeof queryElementsSchema>;
+
+/**
+ * Extract structured query elements using AI SDK's object generation
+ * Uses GPT-5 mini for fast, cost-efficient structured extraction
+ */
 export async function extractQueryElements(query: string): Promise<QueryElements> {
   try {
     await limiter.removeTokens(1);
+
     const systemPrompt = `
-    # Role
-    You are an AI specialized in comprehensive analysis, chain-of-thought reasoning, and domain-specific inquiry, with particular expertise in legal analysis.
-    
-    # Task
-    1. Extract and categorize key information from queries
-    2. Identify the domain of the query (e.g., legal, scientific, historical, etc.)
-    3. Break down complex queries into logical steps
-    4. Generate insightful, domain-appropriate questions to guide reasoning
-    5. Apply various reasoning types appropriately
-    
-    # Principles
-    - Be precise, concise, and thorough in your analysis
-    - Ensure extracted information is directly relevant to the query
-    - Formulate questions that promote deep, multi-faceted thinking
-    - Match reasoning types accurately to each generated question
-    - Adapt your approach based on the identified domain
-    - For legal queries, focus on statutory interpretation, case law relevance, and legal principles
-    - For non-legal queries, focus on domain-specific methodologies and relevant analytical frameworks
-    `;
-    
+# Role
+You are an AI specialized in comprehensive analysis, chain-of-thought reasoning, and domain-specific inquiry, with particular expertise in legal analysis.
+
+# Task
+1. Extract and categorize key information from queries
+2. Identify the domain of the query (e.g., legal, scientific, historical, etc.)
+3. Break down complex queries into logical steps
+4. Generate insightful, domain-appropriate questions to guide reasoning
+5. Apply various reasoning types appropriately
+
+# Principles
+- Be precise, concise, and thorough in your analysis
+- Ensure extracted information is directly relevant to the query
+- Formulate questions that promote deep, multi-faceted thinking
+- Match reasoning types accurately to each generated question
+- Adapt your approach based on the identified domain
+- For legal queries, focus on statutory interpretation, case law relevance, and legal principles
+- For non-legal queries, focus on domain-specific methodologies and relevant analytical frameworks
+`;
+
     const prompt = `
-      Analyze the following query: ${query}
-      
-      Extract and categorize key information:
-      a) Entities: Specific people, places, organizations, or tangible objects
-      b) Concepts: Abstract ideas, themes, or intangible notions
-      c) Time references: Specific dates, periods, or temporal contexts
-      d) Domain-specific terms: Specialized vocabulary relevant to the query's field
-      
-      Identify the primary domain of the query (legal, scientific, historical, economic, or general)
-      
-      Format the response as a JSON object with the following structure:
-      {
-        "key_entities": ["entity1", "entity2", ...],
-        "key_concepts": ["concept1", "concept2", ...],
-        "time_reference": "string or null",
-        "domain_specific_terms": ["term1", "term2", ...],
-        "primary_domain": "string",
-        "legal_question": "yes" or "no"",
-        "chain_of_thought_questions": [
-          {
-            "question": "...",
-            "reasoning_types": ["deductive", "inductive", "abductive", "analogical", "causal"],
-            "relevance": "Explain why this question is important for the analysis"
-          },
-          ...
-        ],
-        "domain_specific_considerations": [
-          "consideration1",
-          "consideration2",
-          ...
-        ]
-      }
-      
-      Guidelines for generating chain-of-thought questions:
-      1. If the query is legal:
-        - Include questions about relevant statutes, case law, and legal principles
-        - Consider constitutional implications, if applicable
-        - Address potential jurisdictional issues
-      2. If the query is scientific:
-        - Include questions about methodology, data analysis, and peer review
-        - Consider ethical implications of research, if applicable
-      3. If the query is historical:
-        - Include questions about primary sources, historiography, and contextual factors
-        - Consider multiple perspectives and potential biases in historical accounts
-      4. For all domains:
-        - Ensure questions cover different levels of analysis (e.g., micro to macro)
-        - Include questions that challenge assumptions or explore alternative viewpoints
-        - Consider interdisciplinary connections when relevant
-      
-      IMPORTANT: Return ONLY a complete JSON object, without any additional text or explanation.
-      `;
+Analyze the following query: ${query}
 
-    let fullResponse = '';
-    for await (const chunk of generateText(prompt, systemPrompt, 'openai', 'gpt-4o')) {
-      fullResponse += chunk;
-    }
+Extract and categorize key information:
+a) Entities: Specific people, places, organizations, or tangible objects
+b) Concepts: Abstract ideas, themes, or intangible notions
+c) Time references: Specific dates, periods, or temporal contexts
+d) Domain-specific terms: Specialized vocabulary relevant to the query's field
 
-    const cleanedResponse = fullResponse.trim().replace(/```json|```/g, '');
-    const elements = JSON.parse(cleanedResponse) as QueryElements;
+Identify the primary domain of the query (legal, scientific, historical, economic, or general)
 
-    // Ensure all expected keys are present
-    elements.key_entities = elements.key_entities || [];
-    elements.key_concepts = elements.key_concepts || [];
-    elements.time_reference = elements.time_reference || null;
-    elements.chain_of_thought_questions = elements.chain_of_thought_questions || [];
-    elements.legal_question = elements.legal_question || "no";
-    
+Guidelines for generating chain-of-thought questions:
+1. If the query is legal:
+  - Include questions about relevant statutes, case law, and legal principles
+  - Consider constitutional implications, if applicable
+  - Address potential jurisdictional issues
+2. If the query is scientific:
+  - Include questions about methodology, data analysis, and peer review
+  - Consider ethical implications of research, if applicable
+3. If the query is historical:
+  - Include questions about primary sources, historiography, and contextual factors
+  - Consider multiple perspectives and potential biases in historical accounts
+4. For all domains:
+  - Ensure questions cover different levels of analysis (e.g., micro to macro)
+  - Include questions that challenge assumptions or explore alternative viewpoints
+  - Consider interdisciplinary connections when relevant
+
+Generate up to 3 chain-of-thought questions.
+`;
+
+    const result = await generateObject({
+      model: getModel(recommendedModels.queryExtraction),
+      schema: queryElementsSchema,
+      prompt,
+      system: systemPrompt,
+      temperature: 0.2,
+    });
+
+    const elements = result.object;
+
+    // Post-process the results
     if (!elements.key_entities.length) {
       elements.key_concepts = elements.key_concepts.slice(0, 10);
     }
     elements.chain_of_thought_questions = elements.chain_of_thought_questions.slice(0, 3);
 
     // Convert key_concepts to Title Case
-    elements.key_concepts = elements.key_concepts.map(concept => 
+    elements.key_concepts = elements.key_concepts.map(concept =>
       concept.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
     );
 
@@ -127,7 +114,7 @@ export async function extractQueryElements(query: string): Promise<QueryElements
       elements.ideal_mix = {
         events: 27,
         claims_ideas: 27,
-        chunks: 4,
+        chunks: 0,  // No longer using chunk embeddings
         concept_relationships: 27
       };
     }
@@ -140,7 +127,7 @@ export async function extractQueryElements(query: string): Promise<QueryElements
 
     return elements;
   } catch (error) {
-    console.error('Failed to parse LLM response as JSON:', error);
+    console.error('Failed to extract query elements:', error);
     return {
       key_entities: [],
       key_concepts: [],
@@ -173,11 +160,14 @@ export function determineQueryDateRange(query: string): string | null {
   }
 }
 
+/**
+ * Generate Cypher query using GPT-5 (optimized for code generation)
+ */
 export async function generateCypherQuery(
   userQuery: string
 ): Promise<string> {
   const prompt = `
-Generate a Cypher query for Neo4j based on the following user query: 
+Generate a Cypher query for Neo4j based on the following user query:
 
 User Query: ${userQuery}
 
@@ -188,9 +178,12 @@ User Query: ${userQuery}
 3. Concept: name
 4. Article: content, title
 5. Amendment: content, title
+6. Event: name, description, start_date, end_date
+7. Claim: content, source, confidence
+8. Scope: content, section_number, section_title, chapter_number, title_number
 
 ## Relationships
-MENTIONS, CONTAINS, AMENDED_BY, REPLACED_BY, INVOLVES, RELATES_TO, INCLUDES, SUPPORTS, CONTRADICTS, SIMILAR_TO, PART_OF, INFLUENCES, CAUSES, SUPPORTS, OPPOSES, DEPENDS_ON
+MENTIONS, CONTAINS, AMENDED_BY, REPLACED_BY, INVOLVES, RELATES_TO, INCLUDES, SUPPORTS, CONTRADICTS, SIMILAR_TO, PART_OF, INFLUENCES, CAUSES, OPPOSES, DEPENDS_ON
 
 ## Available Vector Indexes
 'provision_embedding'
@@ -198,6 +191,9 @@ MENTIONS, CONTAINS, AMENDED_BY, REPLACED_BY, INVOLVES, RELATES_TO, INCLUDES, SUP
 'concept_embedding'
 'article_embedding'
 'amendment_embedding'
+'event_embedding'
+'claim_embedding'
+'scope_embedding'
 
 ## Signatures
 ### db.index.vector.queryRelationships
@@ -217,16 +213,16 @@ db.index.vector.queryNodes(indexName :: STRING, numberOfNearestNeighbours :: INT
 # Examples
 ## Example: Basic Lookup
 <cypher>
-  CALL db.index.vector.queryNodes('article_embedding', $max_items, $query_embedding) 
-  YIELD node AS a, score AS similarity 
-  WHERE similarity >= $similarity_threshold 
-  WITH DISTINCT a, similarity 
-  RETURN { 
-    type: 'Article', 
-    title: p.title, 
-    content: p.content
-    similarity: similarity 
-  } AS result 
+  CALL db.index.vector.queryNodes('article_embedding', $max_items, $query_embedding)
+  YIELD node AS a, score AS similarity
+  WHERE similarity >= $similarity_threshold
+  WITH DISTINCT a, similarity
+  RETURN {
+    type: 'Article',
+    title: a.title,
+    content: a.content,
+    similarity: similarity
+  } AS result
   ORDER BY similarity DESC
 </cypher>
 
@@ -279,14 +275,17 @@ Generate a Cypher query that best fits the user's query. Enclose the Cypher quer
 `;
 
   try {
-    let generatedQuery = '';
-    for await (const chunk of generateText(prompt, '', 'anthropic', 'claude-3-5-sonnet-20240620', 0.1)) {
-      generatedQuery += chunk;
-    }
+    // Use GPT-5 for Cypher generation (optimized for code)
+    const result = await aiGenerateText({
+      model: getModel(recommendedModels.cypherGeneration),
+      prompt,
+      temperature: 0.1,
+      maxTokens: 2000,
+    });
 
-    console.log('Generated Cypher query:', generatedQuery);
+    console.log('Generated Cypher query:', result.text);
 
-    const cypherMatch = generatedQuery.match(/<cypher>([\s\S]*?)<\/cypher>/);
+    const cypherMatch = result.text.match(/<cypher>([\s\S]*?)<\/cypher>/);
     if (cypherMatch) {
       return cypherMatch[1].trim();
     } else {
